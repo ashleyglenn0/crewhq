@@ -1,0 +1,23 @@
+export const june9 = {
+    date: 'June 9',
+    eventKey: 'ATW_June9',
+    events: [
+      { time: '8:00 AM', label: 'Glisten and Go', location: 'RICE Center' },
+      { time: '8:30 AM', label: 'ATW Kick-Off Breakfast by Chick-fil-A', location: 'Atlanta Tech Village - Sylvan' },
+      { time: '9:00 AM', label: 'Black Futurism: The Evolution of Tech & AI', location: 'Symposium (3rd Floor)' },
+      { time: '9:00 AM', label: 'CTRL the Block: A Tech Market Activation', location: 'RICE Parking Lot' },
+      { time: '10:00 AM', label: 'Leadership & Entrepreneurship Advisor Office Hours', location: 'ATV - Sylvan' },
+      { time: '11:30 AM', label: 'Marketing & Branding Advisor Office Hours', location: 'ATV - Sylvan' },
+      { time: '12:15 PM', label: 'Coffee Break & Breakthroughs', location: 'ATV South Downtown' },
+      { time: '1:00 PM', label: 'Customer Discovery, GTM & Sales Office Hours', location: 'ATV - Sylvan' },
+      { time: '1:00 PM', label: 'Feature: Collaboration Over Competition', location: 'RICE Center' },
+      { time: '2:00 PM', label: 'Beyond the Backlog: Product, Startups, & Venture', location: 'ATV South Downtown' },
+      { time: '2:30 PM', label: 'Funding & Finances Advisor Office Hours', location: 'ATV - Sylvan' },
+      { time: '3:00 PM', label: 'Gusto Gathers: Advancing Black Businesses with AI', location: 'UPS LaunchPad' },
+      { time: '3:00 PM', label: 'Startup Awards Alumni Reunion', location: 'ATV - Sylvan' },
+      { time: '3:30 PM', label: 'FinTech ATL: Run it By the Buyers', location: 'UPS Launchpad' },
+      { time: '5:00 PM', label: 'Tech on the Turntables', location: 'Koncept House' },
+      { time: '5:00 PM', label: 'Render Pickup Party', location: 'Wild Leap Brewery' },
+      { time: '6:00 PM', label: 'Innovations in Sustainable Fashion', location: 'GSU Entrepreneurship & Innovation Institute' },
+    ],
+  };

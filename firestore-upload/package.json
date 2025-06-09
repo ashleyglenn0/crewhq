@@ -1,0 +1,17 @@
+{
+  "name": "firestore-upload",
+  "version": "1.0.0",
+  "main": "uploadScheduledVolunteers.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "csv-parser": "^3.2.0",
+    "dotenv": "^16.5.0",
+    "firebase-admin": "^13.4.0"
+  }
+}
