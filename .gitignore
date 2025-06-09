@@ -38,5 +38,7 @@ yarn-error.*
 
 app-example
 
-
+firestore-upload/serviceAccountKey.json
+firestore-upload/.env
+firestore-upload/node_modules/
 
