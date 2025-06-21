@@ -12,13 +12,20 @@ import ScreenWrapper from "../components/ScreenWrapper";
 
 const themes = {
   RenderATL: {
-    logo: require("../assets/images/PinkPeachIcon.png"),
+    background: "#fdf0e2",
+    primary: "#fe88df",
     text: "#711b43",
   },
   ATW: {
-    logo: require("../assets/images/ATWLogo.jpg"),
+    background: "#f5f5f5",
+    primary: "#ffb89e",
     text: "#4f2b91",
   },
+  GovTechCon: {
+    background: "FFFFFF",
+    primary: "#17A2C0",
+    text: "#161F4A"
+  }
 };
 
 export default function PrivacyPolicy() {

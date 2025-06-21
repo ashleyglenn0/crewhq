@@ -24,16 +24,23 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const themes = {
   RenderATL: {
     background: "#fdf0e2",
+    primary: "#fe88df",
     text: "#711b43",
   },
   ATW: {
     background: "#f5f5f5",
+    primary: "#ffb89e",
     text: "#4f2b91",
   },
+  GovTechCon: {
+    background: "FFFFFF",
+    primary: "#17A2C0",
+    text: "#161F4A"
+  }
 };
 
 export default function TeamLeadDashboard() {
-  const { name, event } = useLocalSearchParams();
+  const { name, event, uid } = useLocalSearchParams();
   const router = useRouter();
   const db = getFirestore();
   const theme = themes[event] || themes.RenderATL;
@@ -45,6 +52,11 @@ export default function TeamLeadDashboard() {
   const [showAllLeads, setShowAllLeads] = useState(false);
 
   const makeSecureKey = (key) => key.replace(/[^a-zA-Z0-9._-]/g, "_");
+
+  const briefingBookLinks = {
+    ATW: "https://docs.google.com/document/d/1iktuFJzIWaYvGrSUggxPV_KAOjVp3g2utd2e68vTypc/edit?usp=sharing",
+    RenderATL: "https://docs.google.com/document/d/1KzzK6V7cyZ_KwpKM4pATy4kuK5QPWo8aesVc1qTY8PE/edit?usp=sharing"
+  };
 
   useEffect(() => {
     const loadFloor = async () => {
@@ -209,9 +221,10 @@ export default function TeamLeadDashboard() {
             <Text style={[styles.link, { color: theme.text }]}>🔗 Briefing Book</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() =>
-              Linking.openURL("https://docs.google.com/document/d/1hfUp3M084ql5a4iMtezsJbVbQZEAnkUBMo63WZozphw")
-            }
+            onPress={() => {
+              const url = briefingBookLinks[event];
+              Linking.openURL(url);
+            }}
           >
             <Text style={[styles.link, { color: theme.text }]}>🔗 FAQ</Text>
           </TouchableOpacity>
@@ -289,6 +302,19 @@ export default function TeamLeadDashboard() {
           label="Help"
           icon={<MaterialIcons name="support-agent" size={28} color={theme.text} />}
           onPress={handleHelpRequest}
+          theme={theme}
+        />
+        <IconButton
+          label="Schedule"
+          icon={
+            <MaterialIcons name="event-note" size={28} color={theme.text} />
+          }
+          onPress={() =>
+            router.push({
+              pathname: "/volunteer/VolunteerShiftView",
+              params: { event, uid },
+            })
+          }
           theme={theme}
         />
         <IconButton

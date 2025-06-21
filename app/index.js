@@ -78,6 +78,12 @@ const WelcomeScreen = () => {
             style={styles.eventLogo}
           />
         </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleSelectEvent('GovTechCon')}>
+          <Image
+            source={require('../assets/images/GovTechConLogo.png')}
+            style={styles.eventLogo}
+          />
+        </TouchableOpacity>
       </View>
     </View>
   );

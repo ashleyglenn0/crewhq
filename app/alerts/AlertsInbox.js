@@ -34,6 +34,13 @@ const themes = {
     errorBackground: "#fbeaea",
     errorBorder: "#d04545",
   },
+  GovTechCon: {
+    background: "FFFFFF",
+    primary: "#17A2C0",
+    text: "#161F4A",
+    errorBackground: "#fbeaea",
+    errorBorder: "#d04545",
+  }
 };
 
 export default function AlertsInbox() {

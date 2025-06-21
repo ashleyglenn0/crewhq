@@ -20,8 +20,21 @@ import * as SecureStore from "expo-secure-store";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const themes = {
-  RenderATL: { background: "#fdf0e2", text: "#711b43" },
-  ATW: { background: "#f5f5f5", text: "#4f2b91" },
+  RenderATL: {
+    background: "#fdf0e2",
+    primary: "#fe88df",
+    text: "#711b43",
+  },
+  ATW: {
+    background: "#f5f5f5",
+    primary: "#ffb89e",
+    text: "#4f2b91",
+  },
+  GovTechCon: {
+    background: "FFFFFF",
+    primary: "#17A2C0",
+    text: "#161F4A"
+  }
 };
 
 export default function AlreadyCheckedIn() {

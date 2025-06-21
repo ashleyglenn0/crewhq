@@ -24,15 +24,20 @@ import ScreenWrapper from '../../components/ScreenWrapper';
 
 const themes = {
   RenderATL: {
-    background: '#fdf0e2',
-    primary: '#fe88df',
-    text: '#711b43',
+    background: "#fdf0e2",
+    primary: "#fe88df",
+    text: "#711b43",
   },
   ATW: {
-    background: '#f5f5f5',
-    primary: '#ffb89e',
-    text: '#4f2b91',
+    background: "#f5f5f5",
+    primary: "#ffb89e",
+    text: "#4f2b91",
   },
+  GovTechCon: {
+    background: "FFFFFF",
+    primary: "#17A2C0",
+    text: "#161F4A"
+  }
 };
 
 const tabLabels = {

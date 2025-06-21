@@ -14,6 +14,11 @@ const themes = {
     primary: "#ffb89e",
     text: "#4f2b91",
   },
+  GovTechCon: {
+    background: "FFFFFF",
+    primary: "#17A2C0",
+    text: "#161F4A"
+  }
 };
 
 export default function RoleSelectScreen() {

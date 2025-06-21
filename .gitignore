@@ -42,3 +42,5 @@ firestore-upload/serviceAccountKey.json
 firestore-upload/.env
 firestore-upload/node_modules/
 
+firebase/firebaseConfig.js
+

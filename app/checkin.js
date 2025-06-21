@@ -31,6 +31,11 @@ const themes = {
     primary: "#ffb89e",
     text: "#4f2b91",
   },
+  GovTechCon: {
+    background: "FFFFFF",
+    primary: "#17A2C0",
+    text: "#161F4A"
+  }
 };
 
 const makeSecureKey = (key) => key.replace(/[^a-zA-Z0-9._-]/g, "_");
@@ -138,7 +143,6 @@ export default function CheckInScreen() {
     const fullName = `${firstName.trim()} ${lastName.trim()}`;
 
     try {
-      // Check if check-in exists first
       const checkInQuery = query(
         collection(db, "check_ins"),
         where("first_name", "==", firstName.trim()),
@@ -156,7 +160,6 @@ export default function CheckInScreen() {
         return;
       }
 
-      // Pull role (if we want to store role on check out too)
       const userQuery = query(
         collection(db, "users"),
         where("first_name", "==", firstName.trim()),
@@ -216,7 +219,10 @@ export default function CheckInScreen() {
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.button, { backgroundColor: theme.primary }]}
+        style={[
+          styles.button,
+          { backgroundColor: theme.primary, opacity: 1 },
+        ]}
         onPress={handleCheckIn}
       >
         <Text style={styles.buttonText}>Check In</Text>
@@ -225,7 +231,7 @@ export default function CheckInScreen() {
       <TouchableOpacity
         style={[
           styles.outlineButton,
-          { borderColor: theme.primary, marginTop: 12 },
+          { borderColor: theme.primary, marginTop: 12, opacity: 0.6 },
         ]}
         onPress={handleCheckOut}
       >
@@ -273,12 +279,11 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingVertical: 16,
     borderRadius: 24,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 2,
   },
-  
   outlineButtonText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });
