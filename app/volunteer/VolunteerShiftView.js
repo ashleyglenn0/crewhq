@@ -16,14 +16,50 @@ import {
   getDocs,
   updateDoc,
   doc,
-  getDoc,
   addDoc,
 } from "firebase/firestore";
 import AvailabilityForm from "../../components/AvailabilityForm"; // Assuming the form component lives here
 
+const themes = {
+  RenderATL: {
+    background: "#fdf0e2",
+    primary: "#fe88df",
+    text: "#711b43",
+  },
+  ATW: {
+    background: "#f5f5f5",
+    primary: "#ffb89e",
+    text: "#4f2b91",
+  },
+  GovTechCon: {
+    background: "FFFFFF",
+    primary: "#17A2C0",
+    text: "#161F4A",
+  },
+};
+
+const standardizeTimeFormat = (time) => {
+    // Ensure that the time has a space between the hour and AM/PM (e.g. "5:00PM" -> "5:00 PM")
+    return time.replace(/(\d)([APM]{2})/, '$1 $2');
+  };
+  
+  const filterUpcomingShifts = (shifts) => {
+    const now = new Date(); // Get the current time
+    const currentDate = now.toISOString().split("T")[0]; // Get today's date in "YYYY-MM-DD" format
+  
+    return shifts.filter((shift) => {
+      // Ensure the shift date is in the "YYYY-MM-DD" format for comparison
+      const shiftDate = shift.date;
+  
+      // Filter out shifts that have already passed
+      return shiftDate >= currentDate;
+    });
+  };
+
 export default function VolunteerShiftView() {
   const { event, name, uid } = useLocalSearchParams();
   const router = useRouter();
+  const theme = themes[event] || themes.RenderATL;
 
   const [availableShifts, setAvailableShifts] = useState([]);
   const [myShifts, setMyShifts] = useState([]);
@@ -62,11 +98,14 @@ export default function VolunteerShiftView() {
           ...doc.data(),
         }));
 
-        const mine = allShifts.filter((shift) =>
+        // Filter out past shifts here
+        const upcomingShifts = filterUpcomingShifts(allShifts);
+
+        const mine = upcomingShifts.filter((shift) =>
           shift.claimed_by.some((v) => v.uid === currentUser.uid)
         );
 
-        const available = allShifts.filter(
+        const available = upcomingShifts.filter(
           (shift) =>
             shift.claimed_by.length <
               shift.max_signups + shift.overage_buffer &&
@@ -84,8 +123,6 @@ export default function VolunteerShiftView() {
   }, [event, currentUser]);
 
   const handleClaim = async (shift) => {
-    console.log("UID", currentUser.uid);
-    console.log(currentUser, "currentUser");
     try {
       const shiftRef = doc(db, "shifts", shift.id);
       const updatedClaimed = Array.isArray(shift.claimed_by)
@@ -147,24 +184,27 @@ export default function VolunteerShiftView() {
       item.claimed_by.length >= item.max_signups + item.overage_buffer;
 
     return (
-      <View style={styles.card}>
-        <Text style={styles.title}>
+      <View style={[styles.card, { borderColor: theme.primary }]}>
+        <Text style={[styles.title, { color: theme.text }]}>
           {item.date} | {item.start_time}–{item.end_time}
         </Text>
-        <Text>{item.floor}</Text>
-        <Text>{item.role}</Text>
+        <Text style={{ color: theme.text }}>{item.floor}</Text>
+        <Text style={{ color: theme.text }}>{item.role}</Text>
 
         {!isFull ? (
           <TouchableOpacity
             onPress={() => handleClaim(item)}
-            style={styles.claimButton}
+            style={[styles.claimButton, { backgroundColor: theme.primary }]}
           >
             <Text style={styles.claimText}>Claim Shift</Text>
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
             onPress={() => handleJoinWaitlist(item)}
-            style={[styles.claimButton, { backgroundColor: "#ccc" }]}
+            style={[
+              styles.claimButton,
+              { backgroundColor: "#ccc", borderColor: theme.primary },
+            ]}
           >
             <Text style={[styles.claimText, { color: "#711B44" }]}>
               Join Waitlist
@@ -176,75 +216,35 @@ export default function VolunteerShiftView() {
   };
 
   const renderMyShiftItem = ({ item }) => (
-    <View style={styles.card}>
-      <Text style={styles.title}>
+    <View style={[styles.card, { borderColor: theme.primary }]}>
+      <Text style={[styles.title, { color: theme.text }]}>
         {item.date} | {item.start_time}–{item.end_time}{" "}
         {isScheduleLocked() && " 🔒"}
       </Text>
-      <Text>{item.floor}</Text>
-      <Text>{item.role}</Text>
+      <Text style={{ color: theme.text }}>{item.floor}</Text>
+      <Text style={{ color: theme.text }}>{item.role}</Text>
     </View>
   );
-
-  const handleAvailabilityChange = (day, shift) => {
-    setAvailability((prev) => ({
-      ...prev,
-      [day]: {
-        ...prev[day],
-        [shift]: !prev[day]?.[shift],
-      },
-    }));
-  };
-
-  const handleAvailabilitySubmit = async () => {
-    const payload = [];
-    for (const [day, shiftsObj] of Object.entries(availability)) {
-      for (const [shift, isAvailable] of Object.entries(shiftsObj)) {
-        if (isAvailable) {
-          payload.push({ day, shift });
-        }
-      }
-    }
-
-    try {
-      const availabilityCollection = collection(db, "availability");
-      for (const entry of payload) {
-        await addDoc(availabilityCollection, {
-          event,
-          uid,
-          name,
-          ...entry,
-          timestamp: new Date().toISOString(),
-        });
-      }
-
-      Alert.alert("Success", "Availability submitted.");
-      setAvailability({});
-    } catch (err) {
-      console.error("Error submitting availability:", err);
-      Alert.alert("Error submitting availability.");
-    }
-  };
 
   return (
     <View style={{ padding: 16 }}>
       <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-        <Text style={styles.backText}>← Back to Dashboard</Text>
+        <Text style={[styles.backText, { color: theme.text }]}>← Back to Dashboard</Text>
       </TouchableOpacity>
 
       {manualScheduling ? (
         !showAvailable ? (
           <>
-            <Text style={styles.sectionHeader}>My Shifts</Text>
+            <Text style={[styles.sectionHeader, { color: theme.text }]}>My Shifts</Text>
             <FlatList
               data={myShifts}
               keyExtractor={(item) => `mine-${item.id}`}
               renderItem={renderMyShiftItem}
-              ListEmptyComponent={<Text>No claimed shifts yet.</Text>}
+              ListEmptyComponent={<Text style={{ color: theme.text }}>No claimed shifts yet.</Text>}
             />
             {!isScheduleLocked() && (
               <TouchableOpacity
-                style={styles.addMoreButton}
+                style={[styles.addMoreButton, { backgroundColor: theme.primary }]}
                 onPress={() =>
                   router.push({
                     pathname: "/volunteer/RequestChangeForm",
@@ -256,7 +256,7 @@ export default function VolunteerShiftView() {
               </TouchableOpacity>
             )}
             <TouchableOpacity
-              style={styles.addMoreButton}
+              style={[styles.addMoreButton, { backgroundColor: theme.primary }]}
               onPress={() => setShowAvailable(true)}
             >
               <Text style={styles.claimText}>Add More Shifts</Text>
@@ -264,18 +264,18 @@ export default function VolunteerShiftView() {
           </>
         ) : (
           <>
-            <Text style={styles.sectionHeader}>Available Shifts</Text>
+            <Text style={[styles.sectionHeader, { color: theme.text }]}>Available Shifts</Text>
             <FlatList
               data={availableShifts}
               keyExtractor={(item) => `available-${item.id}`}
               renderItem={renderShiftItem}
-              ListEmptyComponent={<Text>No available shifts.</Text>}
+              ListEmptyComponent={<Text style={{ color: theme.text }}>No available shifts.</Text>}
             />
             <TouchableOpacity
-              style={styles.backButton}
+              style={[styles.backButton, { borderColor: theme.primary }]}
               onPress={() => setShowAvailable(false)}
             >
-              <Text style={styles.backText}>← Back to My Shifts</Text>
+              <Text style={[styles.backText, { color: theme.text }]}>← Back to My Shifts</Text>
             </TouchableOpacity>
           </>
         )
@@ -302,7 +302,6 @@ const styles = StyleSheet.create({
   },
   claimButton: {
     marginTop: 10,
-    backgroundColor: "#fe88df",
     padding: 10,
     borderRadius: 8,
   },
@@ -318,16 +317,15 @@ const styles = StyleSheet.create({
   },
   addMoreButton: {
     marginTop: 16,
-    backgroundColor: "#fe88df",
     padding: 12,
     borderRadius: 10,
+    alignItems: "center",
   },
   backButton: {
     marginBottom: 12,
     paddingVertical: 8,
   },
   backText: {
-    color: "#711B44",
     fontWeight: "600",
     fontSize: 16,
   },

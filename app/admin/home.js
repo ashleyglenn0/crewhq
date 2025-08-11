@@ -27,8 +27,8 @@ const themes = {
   GovTechCon: {
     background: "FFFFFF",
     primary: "#17A2C0",
-    text: "#161F4A"
-  }
+    text: "#161F4A",
+  },
 };
 
 export default function AdminHome() {
@@ -45,7 +45,7 @@ export default function AdminHome() {
   const theme = themes[currentEvent] || themes.RenderATL;
 
   // Extract first name only
-  const firstName = name ? name.split('_')[0] : '';
+  const firstName = name ? name.split("_")[0] : "";
 
   const handleSwitchEvent = () => {
     const newEvent = currentEvent === "RenderATL" ? "ATW" : "RenderATL";
@@ -143,15 +143,16 @@ export default function AdminHome() {
       <Text style={[styles.subheading, { color: theme.text }]}>
         Event: {currentEvent}
       </Text>
-
-      <TouchableOpacity
-        onPress={handleSwitchEvent}
-        style={[styles.switchButton, { borderColor: theme.primary }]}
-      >
-        <Text style={[styles.switchButtonText, { color: theme.primary }]}>
-          Switch to {currentEvent === "RenderATL" ? "ATW" : "RenderATL"}
-        </Text>
-      </TouchableOpacity>
+      {(event === "Render" || event === "ATW") && (
+        <TouchableOpacity
+          onPress={handleSwitchEvent}
+          style={[styles.switchButton, { borderColor: theme.primary }]}
+        >
+          <Text style={[styles.switchButtonText, { color: theme.primary }]}>
+            Switch to {currentEvent === "RenderATL" ? "ATW" : "RenderATL"}
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {/* Stats */}
       <View style={styles.cardGrid}>

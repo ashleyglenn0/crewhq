@@ -60,15 +60,15 @@ export default function ManualCheckInScreen() {
       showAlert("⚠️ Please enter both names.");
       return;
     }
-
+  
     if (statusType === "Checked In" && !agreed) {
       showAlert("⚠️ You must agree to the privacy policy.");
       return;
     }
-
+  
     const timestamp = Timestamp.now();
     const fullName = `${firstName.trim()} ${lastName.trim()}`;
-
+  
     try {
       const usersRef = collection(db, "users");
       const q = query(
@@ -77,16 +77,16 @@ export default function ManualCheckInScreen() {
         where("last_name", "==", lastName.trim())
       );
       const snapshot = await getDocs(q);
-
+  
       let role = "volunteer";
       let task = null;
-
+  
       if (!snapshot.empty) {
         const user = snapshot.docs[0].data();
         role = user.role?.toLowerCase() || "volunteer";
-        task = user.assignedTask || null;
+        task = user.assignedTask || "TBD"; // Default to "TBD" if no task is assigned
       }
-
+  
       // ✅ Add to check_ins
       await addDoc(collection(db, "check_ins"), {
         first_name: firstName.trim(),
@@ -97,28 +97,27 @@ export default function ManualCheckInScreen() {
         event,
         role,
       });
-
+  
       // ✅ If team lead, add to task_checkins
-      if (role === "teamlead" && statusType === "Checked In") {
+      if (statusType === "Checked In" && task) {
+        // No need for first/last name match here for manual check-ins
         await addDoc(collection(db, "task_checkins"), {
           first_name: firstName.trim(),
           last_name: lastName.trim(),
-          task: task || "Unknown",
-          role: "teamlead",
+          task: task, // Use the task from the user's role or shift
+          role: role,
           status: "Check In for Task",
           checkinTime: timestamp,
           checkoutTime: null,
-          teamLead: fullName,
+          teamLead: role === "teamlead" ? fullName : null,
           event,
         });
       }
-
+  
       showAlert(
-        `✅ ${
-          role.charAt(0).toUpperCase() + role.slice(1)
-        } ${statusType.toLowerCase()} successfully!`
+        `✅ ${role.charAt(0).toUpperCase() + role.slice(1)} ${statusType.toLowerCase()} successfully!`
       );
-
+  
       setFirstName("");
       setLastName("");
       setAgreed(false);
@@ -127,6 +126,11 @@ export default function ManualCheckInScreen() {
       showAlert("❌ Something went wrong. Try again.");
     }
   };
+  
+  
+  
+  
+  
 
   return (
     <ScreenWrapper event={event}>

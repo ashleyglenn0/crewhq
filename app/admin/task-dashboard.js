@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  TextInput,
   Modal,
   LayoutAnimation,
   UIManager,
@@ -60,24 +59,14 @@ export default function TaskDashboardScreen() {
 
   const theme = themes[currentEvent] || themes.RenderATL;
 
-  const tasks =
-    currentEvent === "ATL Tech Week"
-      ? [
-          "Registration",
-          "Room Setup",
-          "Tech Support",
-          "Food Truck Park",
-          "Stage Crew",
-          "General Support",
-        ]
-      : [
-          "Registration",
-          "Swag Distribution",
-          "Tech Support",
-          "Check-in Desk",
-          "Room Setup",
-          "General Support",
-        ];
+  // Hardcoded roles for each event
+  const eventRoles = {
+    RenderATL: ["Registration", "Swag Distribution", "Tech Support", "Check-in Desk", "Room Setup", "General Support"],
+    ATW: ["Registration", "Room Setup", "Tech Support", "Food Truck Park", "Stage Crew", "General Support"],
+    GovTechCon: ["Registration", "Way Finding", "Speaker Assistance", "Tech Support", "Rapid Response", "Super VIP Concierge"]
+  };
+
+  const tasks = eventRoles[currentEvent] || [];  // Fetch roles based on the event
 
   useEffect(() => {
     const fetchData = async () => {

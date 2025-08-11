@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,21 +6,21 @@ import {
   FlatList,
   StyleSheet,
   Dimensions,
-} from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import * as FileSystem from 'expo-file-system';
-import * as Sharing from 'expo-sharing';
-import { TabView, SceneMap, TabBar } from 'react-native-tab-view';
-import { db } from '../../firebase/firebaseConfig';
+} from "react-native";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
+import { TabView, SceneMap, TabBar } from "react-native-tab-view";
+import { db } from "../../firebase/firebaseConfig";
 import {
   collection,
   query,
   where,
   getDocs,
   Timestamp,
-} from 'firebase/firestore';
-import ScreenWrapper from '../../components/ScreenWrapper';
+} from "firebase/firestore";
+import ScreenWrapper from "../../components/ScreenWrapper";
 
 const themes = {
   RenderATL: {
@@ -36,28 +36,28 @@ const themes = {
   GovTechCon: {
     background: "FFFFFF",
     primary: "#17A2C0",
-    text: "#161F4A"
-  }
+    text: "#161F4A",
+  },
 };
 
 const tabLabels = {
-  checkins: 'Check-Ins',
-  checkouts: 'Check-Outs',
-  noshows: 'No-Shows',
+  checkins: "Check-Ins",
+  checkouts: "Check-Outs",
+  noshows: "No-Shows",
 };
 
 export default function ReportsScreen() {
   const { event, name } = useLocalSearchParams();
   const router = useRouter();
 
-  const [currentEvent, setCurrentEvent] = useState(event || 'RenderATL');
+  const [currentEvent, setCurrentEvent] = useState(event || "RenderATL");
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [tabIndex, setTabIndex] = useState(0);
   const [routes] = useState([
-    { key: 'checkins', title: 'Check-Ins' },
-    { key: 'checkouts', title: 'Check-Outs' },
-    { key: 'noshows', title: 'No-Shows' },
+    { key: "checkins", title: "Check-Ins" },
+    { key: "checkouts", title: "Check-Outs" },
+    { key: "noshows", title: "No-Shows" },
   ]);
 
   const [checkIns, setCheckIns] = useState([]);
@@ -72,37 +72,49 @@ export default function ReportsScreen() {
         selectedDate.getFullYear(),
         selectedDate.getMonth(),
         selectedDate.getDate(),
-        0, 0, 0, 0
+        0,
+        0,
+        0,
+        0
       );
       const endOfDay = new Date(
         selectedDate.getFullYear(),
         selectedDate.getMonth(),
         selectedDate.getDate(),
-        23, 59, 59, 999
+        23,
+        59,
+        59,
+        999
       );
       const start = Timestamp.fromDate(startOfDay);
       const end = Timestamp.fromDate(endOfDay);
 
       const [ciSnap, coSnap, schedSnap] = await Promise.all([
-        getDocs(query(
-          collection(db, 'check_ins'),
-          where('event', '==', currentEvent),
-          where('status', '==', 'Checked In'),
-          where('timestamp', '>=', start),
-          where('timestamp', '<=', end)
-        )),
-        getDocs(query(
-          collection(db, 'check_ins'),
-          where('event', '==', currentEvent),
-          where('status', '==', 'Checked Out'),
-          where('timestamp', '>=', start),
-          where('timestamp', '<=', end)
-        )),
-        getDocs(query(
-          collection(db, 'scheduled_volunteers'),
-          where('event', '==', currentEvent),
-          where('date', '==', selectedDate.toISOString().split('T')[0])
-        )),
+        getDocs(
+          query(
+            collection(db, "check_ins"),
+            where("event", "==", currentEvent),
+            where("status", "==", "Checked In"),
+            where("timestamp", ">=", start),
+            where("timestamp", "<=", end)
+          )
+        ),
+        getDocs(
+          query(
+            collection(db, "check_ins"),
+            where("event", "==", currentEvent),
+            where("status", "==", "Checked Out"),
+            where("timestamp", ">=", start),
+            where("timestamp", "<=", end)
+          )
+        ),
+        getDocs(
+          query(
+            collection(db, "scheduled_volunteers"),
+            where("event", "==", currentEvent),
+            where("date", "==", selectedDate.toISOString().split("T")[0])
+          )
+        ),
       ]);
 
       const ciData = ciSnap.docs.map((doc) => doc.data());
@@ -113,8 +125,7 @@ export default function ReportsScreen() {
         (v) =>
           !ciData.some(
             (ci) =>
-              ci.first_name === v.first_name &&
-              ci.last_name === v.last_name
+              ci.first_name === v.first_name && ci.last_name === v.last_name
           )
       );
 
@@ -133,17 +144,18 @@ export default function ReportsScreen() {
       noshows: noShows,
     };
     const rows = [
-      ['First Name', 'Last Name', 'Status', 'Date'],
+      ["First Name", "Last Name", "Status", "Date"],
       ...dataMap[type].map((v) => [
         v.first_name,
         v.last_name,
-        v.status || (type === 'noshows' ? 'No Show' : ''),
-        v.timestamp?.toDate?.().toLocaleString?.() || v.date || 'N/A',
+        v.status || (type === "noshows" ? "No Show" : ""),
+        v.timestamp?.toDate?.().toLocaleString?.() || v.date || "N/A",
       ]),
     ];
-    const csv = rows.map((r) => r.join(',')).join('\n');
-    const fileUri = FileSystem.documentDirectory +
-      `${type}-${selectedDate.toISOString().split('T')[0]}.csv`;
+    const csv = rows.map((r) => r.join(",")).join("\n");
+    const fileUri =
+      FileSystem.documentDirectory +
+      `${type}-${selectedDate.toISOString().split("T")[0]}.csv`;
     await FileSystem.writeAsStringAsync(fileUri, csv, {
       encoding: FileSystem.EncodingType.UTF8,
     });
@@ -161,12 +173,12 @@ export default function ReportsScreen() {
             {item.first_name} {item.last_name}
           </Text>
           <Text style={[styles.cell, { color: theme.text }]}>
-            {item.status || 'No Show'}
+            {item.status || "No Show"}
           </Text>
         </View>
       )}
       ListEmptyComponent={
-        <Text style={{ textAlign: 'center', color: theme.text, marginTop: 24 }}>
+        <Text style={{ textAlign: "center", color: theme.text, marginTop: 24 }}>
           No data available.
         </Text>
       }
@@ -186,16 +198,20 @@ export default function ReportsScreen() {
       </Text>
 
       <View style={styles.controls}>
-        <TouchableOpacity
-          onPress={() =>
-            setCurrentEvent(currentEvent === 'RenderATL' ? 'ATW' : 'RenderATL')
-          }
-          style={[styles.switchButton, { borderColor: theme.primary }]}
-        >
-          <Text style={{ color: theme.primary }}>
-            Switch to {currentEvent === 'RenderATL' ? 'ATW' : 'RenderATL'}
-          </Text>
-        </TouchableOpacity>
+        {(event === "Render" || event === "ATW") && (
+          <TouchableOpacity
+            onPress={() =>
+              setCurrentEvent(
+                currentEvent === "RenderATL" ? "ATW" : "RenderATL"
+              )
+            }
+            style={[styles.switchButton, { borderColor: theme.primary }]}
+          >
+            <Text style={{ color: theme.primary }}>
+              Switch to {currentEvent === "RenderATL" ? "ATW" : "RenderATL"}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         <TouchableOpacity
           onPress={() => setShowDatePicker(true)}
@@ -206,7 +222,7 @@ export default function ReportsScreen() {
       </View>
 
       {showDatePicker && (
-        <View style={{ alignSelf: 'center', marginBottom: 20 }}>
+        <View style={{ alignSelf: "center", marginBottom: 20 }}>
           <DateTimePicker
             value={selectedDate}
             mode="date"
@@ -223,13 +239,13 @@ export default function ReportsScreen() {
         navigationState={{ index: tabIndex, routes }}
         renderScene={renderScene}
         onIndexChange={setTabIndex}
-        initialLayout={{ width: Dimensions.get('window').width }}
+        initialLayout={{ width: Dimensions.get("window").width }}
         renderTabBar={(props) => (
           <TabBar
             {...props}
             indicatorStyle={{ backgroundColor: theme.primary }}
             style={{ backgroundColor: theme.background }}
-            labelStyle={{ fontWeight: 'bold' }}
+            labelStyle={{ fontWeight: "bold" }}
             activeColor={theme.text}
             inactiveColor={theme.text}
           />
@@ -247,7 +263,10 @@ export default function ReportsScreen() {
 
       <TouchableOpacity
         onPress={() =>
-          router.push({ pathname: '/admin/home', params: { name, event: currentEvent } })
+          router.push({
+            pathname: "/admin/home",
+            params: { name, event: currentEvent },
+          })
         }
         style={[styles.backButton, { borderColor: theme.primary }]}
       >
@@ -262,13 +281,13 @@ export default function ReportsScreen() {
 const styles = StyleSheet.create({
   title: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
   controls: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    justifyContent: "space-around",
     marginBottom: 12,
   },
   switchButton: {
@@ -283,15 +302,15 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   dateButtonText: {
-    color: '#fff',
-    fontWeight: '600',
+    color: "#fff",
+    fontWeight: "600",
   },
   row: {
     borderWidth: 1,
     borderRadius: 12,
     marginVertical: 6,
     padding: 12,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   cell: {
     fontSize: 16,
@@ -301,23 +320,23 @@ const styles = StyleSheet.create({
     marginTop: 20,
     padding: 16,
     borderRadius: 24,
-    alignItems: 'center',
+    alignItems: "center",
   },
   exportText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   backButton: {
     marginTop: 24,
     borderWidth: 2,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    alignSelf: 'center',
+    alignSelf: "center",
     borderRadius: 20,
   },
   backText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

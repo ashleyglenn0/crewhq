@@ -13,7 +13,25 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { addDoc, collection, doc, getDoc, setDoc } from "firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 
-export default function CreateShiftTab({ event }) {
+const themes = {
+  RenderATL: {
+    background: "#fdf0e2",
+    primary: "#fe88df",
+    text: "#711b43",
+  },
+  ATW: {
+    background: "#f5f5f5",
+    primary: "#ffb89e",
+    text: "#4f2b91",
+  },
+  GovTechCon: {
+    background: "FFFFFF",
+    primary: "#17A2C0",
+    text: "#161F4A"
+  }
+};
+
+export default function CreateShiftTab({ event, setManualScheduling }) {
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [startTime, setStartTime] = useState("");
@@ -24,7 +42,9 @@ export default function CreateShiftTab({ event }) {
   const [overageBuffer, setOverageBuffer] = useState("");
   const [teamLeadsNeeded, setTeamLeadsNeeded] = useState("");
   const [notes, setNotes] = useState("");
-  const [manualScheduling, setManualScheduling] = useState(true);
+  const [manualScheduling, setLocalManualScheduling] = useState(true);
+
+  const theme = themes[event] || themes.RenderATL; // Apply theming here
 
   useEffect(() => {
     const fetchSchedulingMode = async () => {
@@ -46,7 +66,8 @@ export default function CreateShiftTab({ event }) {
         { manual_scheduling: newMode },
         { merge: true }
       );
-      setManualScheduling(newMode);
+      setLocalManualScheduling(newMode);
+      setManualScheduling(newMode);  // Pass the updated value to the parent
     } catch (err) {
       console.error("Error updating scheduling mode:", err);
     }
@@ -91,23 +112,23 @@ export default function CreateShiftTab({ event }) {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Create New Shift</Text>
+      <Text style={[styles.title, { color: theme.text }]}>Create New Shift</Text>
 
       <View style={styles.toggleRow}>
-        <Text style={styles.label}>Manual Scheduling</Text>
+        <Text style={[styles.label, { color: theme.text }]}>Manual Scheduling</Text>
         <Switch
           value={manualScheduling}
           onValueChange={toggleSchedulingMode}
-          thumbColor={manualScheduling ? "#fe88df" : "#ccc"}
+          thumbColor={manualScheduling ? theme.primary : "#ccc"}
         />
       </View>
 
-      <Text style={styles.label}>Date</Text>
+      <Text style={[styles.label, { color: theme.text }]}>Date</Text>
       <TouchableOpacity
-        style={styles.dateButton}
+        style={[styles.dateButton, { backgroundColor: theme.background }]}
         onPress={() => setShowDatePicker(true)}
       >
-        <Text style={styles.dateButtonText}>
+        <Text style={[styles.dateButtonText, { color: theme.text }]}>
           {date.toDateString()} (Tap to change)
         </Text>
       </TouchableOpacity>
@@ -124,71 +145,74 @@ export default function CreateShiftTab({ event }) {
         />
       )}
 
-      <Text style={styles.label}>Start Time</Text>
+      <Text style={[styles.label, { color: theme.text }]}>Start Time</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: theme.primary }]}
         placeholder="e.g., 7:00 AM"
         value={startTime}
         onChangeText={setStartTime}
       />
 
-      <Text style={styles.label}>End Time</Text>
+      <Text style={[styles.label, { color: theme.text }]}>End Time</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: theme.primary }]}
         placeholder="e.g., 1:00 PM"
         value={endTime}
         onChangeText={setEndTime}
       />
 
-      <Text style={styles.label}>Floor/Room</Text>
+      <Text style={[styles.label, { color: theme.text }]}>Floor/Room</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: theme.primary }]}
         placeholder="e.g., Main Floor"
         value={floor}
         onChangeText={setFloor}
       />
 
-      <Text style={styles.label}>Role</Text>
+      <Text style={[styles.label, { color: theme.text }]}>Role</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: theme.primary }]}
         placeholder="e.g., Registration"
         value={role}
         onChangeText={setRole}
       />
 
-      <Text style={styles.label}>Volunteers Needed</Text>
+      <Text style={[styles.label, { color: theme.text }]}>Volunteers Needed</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: theme.primary }]}
         keyboardType="numeric"
         value={volunteersNeeded}
         onChangeText={setVolunteersNeeded}
       />
 
-      <Text style={styles.label}>Overage Buffer</Text>
+      <Text style={[styles.label, { color: theme.text }]}>Overage Buffer</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: theme.primary }]}
         keyboardType="numeric"
         value={overageBuffer}
         onChangeText={setOverageBuffer}
       />
 
-      <Text style={styles.label}>Team Leads Needed</Text>
+      <Text style={[styles.label, { color: theme.text }]}>Team Leads Needed</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: theme.primary }]}
         keyboardType="numeric"
         value={teamLeadsNeeded}
         onChangeText={setTeamLeadsNeeded}
       />
 
-      <Text style={styles.label}>Notes (Optional)</Text>
+      <Text style={[styles.label, { color: theme.text }]}>Notes (Optional)</Text>
       <TextInput
-        style={[styles.input, { height: 60 }]}
+        style={[styles.input, { height: 60, borderColor: theme.primary }]}
         multiline
         value={notes}
         onChangeText={setNotes}
       />
 
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+      <TouchableOpacity
+        style={[styles.submitButton, { backgroundColor: theme.primary }]}
+        onPress={handleSubmit}
+      >
         <Text style={styles.submitText}>Create Shift</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -219,7 +243,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   dateButton: {
-    backgroundColor: "#eee",
     padding: 10,
     borderRadius: 8,
     alignItems: "center",
@@ -230,7 +253,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   submitButton: {
-    backgroundColor: "#fe88df",
     padding: 14,
     borderRadius: 12,
     marginTop: 20,

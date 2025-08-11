@@ -12,7 +12,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
-import { schedules } from '../data/scheduleData';
 import {
   getFirestore,
   collection,
@@ -25,27 +24,30 @@ import {
 
 import useVolunteerUid from "../hooks/useVolunteerUid";
 
-// Helper sanitize for SecureStore keys
-const sanitizeKey = (str) => (str || "").replace(/[^a-zA-Z0-9._-]/g, "_");
-
 // Theme colors for each event
 const themes = {
   RenderATL: {
     background: "#fdf0e2",
     primary: "#fe88df",
     text: "#711b43",
+    link: "#fe88df",
   },
   ATW: {
     background: "#f5f5f5",
     primary: "#ffb89e",
     text: "#4f2b91",
+    link: "#ffb89e",
   },
   GovTechCon: {
     background: "FFFFFF",
     primary: "#17A2C0",
-    text: "#161F4A"
-  }
+    text: "#161F4A",
+    link: "#17A2C0",
+  },
 };
+
+// Helper sanitize for SecureStore keys
+const sanitizeKey = (str) => (str || "").replace(/[^a-zA-Z0-9._-]/g, "_");
 
 export default function VolunteerDashboard() {
   const { name, event } = useLocalSearchParams();
@@ -54,16 +56,21 @@ export default function VolunteerDashboard() {
   const db = getFirestore();
   const theme = themes[event] || themes.RenderATL;
 
-  const isATW = event?.toLowerCase() === "atw";
   const [floor, setFloor] = useState("");
   const [floorTeamLeads, setFloorTeamLeads] = useState([]);
+  const [nextShift, setNextShift] = useState(null);
+  const [impactData, setImpactData] = useState({
+    shiftsCompleted: 0,
+    totalHours: 0,
+  });
+  const isCheckedIn = nextShift?.checked_in ?? false;
 
   // Determine active schedule day
   const today = new Date();
   const day = today.getDate();
-  let activeDay = isATW ? "June8" : "June11";
-  if (!isATW && day === 12) activeDay = "June12";
-  else if (!isATW && day === 13) activeDay = "June13";
+  let activeDay = day === 8 ? "June8" : "June11";
+  if (day === 12) activeDay = "June12";
+  if (day === 13) activeDay = "June13";
 
   const normalizedEvent =
     event?.toLowerCase() === "renderatl"
@@ -72,15 +79,70 @@ export default function VolunteerDashboard() {
       ? "ATW"
       : event;
 
-  const selectedSchedule = schedules[`${normalizedEvent}_${activeDay}`] || [];
-  const upcomingBlocks = getTimeBlockEvents(selectedSchedule, isATW);
-  const highlights = getHighlightsFromSchedule(selectedSchedule);
-
   const briefingBookLinks = {
     ATW: "https://docs.google.com/document/d/1iktuFJzIWaYvGrSUggxPV_KAOjVp3g2utd2e68vTypc/edit?usp=sharing",
     RenderATL:
       "https://docs.google.com/document/d/1KzzK6V7cyZ_KwpKM4pATy4kuK5QPWo8aesVc1qTY8PE/edit?usp=sharing",
+    GovTechCon: 
+      "https://docs.google.com/document/d/1YumIrL1t2gu0QS2snl9XJdwQ_AbbTTnjOpM97Q6lXpE/edit?tab=t.0#heading=h.u5j8fojvpro9"
   };
+
+  const quickTips = {
+    RenderATL: (
+      <Text style={[styles.cardText, { color: theme.text }]}>
+        • Wi-Fi: render2025 / Password: atltech{"\n"}• Lost & Found: Check at HQ
+        {"\n"}• Slack: #volunteers channel
+      </Text>
+    ),
+    ATW: (
+      <Text style={[styles.cardText, { color: theme.text }]}>
+        • Wi-Fi: atl2025 / Password: techweek{"\n"}• Lost & Found: Visit Info
+        Desk{"\n"}• Slack: #atltechweek-volunteers
+      </Text>
+    ),
+    GovTechCon: (
+      <Text style={[styles.cardText, { color: theme.text }]}>
+        • Wi-Fi: govtech2025 / Password: connect{"\n"}• Lost & Found: Visit the
+        Welcome Desk{"\n"}• Slack: #gtc-volunteers
+      </Text>
+    ),
+  };
+
+  // check if team lead and redirect
+  useEffect(() => {
+    const checkIfTeamLead = async () => {
+      try {
+        const snapshot = await getDocs(
+          query(
+            collection(db, "shifts"),
+            where("team_lead_uid", "==", uid), // Check for the user's UID in the team_lead_uid field
+            where("event", "==", event) // Ensure it matches the current event
+          )
+        );
+
+        if (!snapshot.empty) {
+          router.replace({
+            pathname: "/teamlead/dashboard",
+            params: { uid, name, event },
+          });
+        }
+      } catch (error) {
+        console.error("Error checking team lead status:", error);
+      }
+    };
+
+    checkIfTeamLead();
+  }, [uid, event]);
+
+  // Load next shift
+  useEffect(() => {
+    const loadShift = async () => {
+      const shift = await getUpcomingShift(uid, event);
+      setNextShift(shift);
+    };
+
+    loadShift();
+  }, [uid]);
 
   // Load volunteer's assigned floor
   useEffect(() => {
@@ -92,58 +154,58 @@ export default function VolunteerDashboard() {
           setFloor(cached);
           return;
         }
-  
+
         const todayStr = new Date().toISOString().split("T")[0];
-  
-        // 🔍 First check claimed shifts
+
         const shiftQ = query(
           collection(db, "shifts"),
           where("event", "==", event),
           where("date", "==", todayStr)
         );
-  
+
         const shiftSnap = await getDocs(shiftQ);
         let matchedFloor = null;
-  
+
         for (const doc of shiftSnap.docs) {
           const shift = doc.data();
           const claimed = shift.claimed_by || [];
-  
+
           const match = claimed.find(
-            (v) => v.first_name?.toLowerCase() + " " + v.last_name?.toLowerCase() === name?.toLowerCase()
+            (v) =>
+              v.first_name?.toLowerCase() + " " + v.last_name?.toLowerCase() ===
+              name?.toLowerCase()
           );
-  
+
           if (match && shift.floor) {
             matchedFloor = shift.floor;
             break;
           }
         }
-  
+
         if (matchedFloor) {
           setFloor(matchedFloor);
           await SecureStore.setItemAsync(key, matchedFloor);
           return;
         }
-  
-        // ⛳ Fall back to task_checkins
+
         const fallbackQ = query(
           collection(db, "task_checkins"),
           where("name", "==", name),
           where("event", "==", event)
         );
-  
+
         const fallbackSnap = await getDocs(fallbackQ);
         const doc = fallbackSnap.docs[0]?.data();
-  
+
         if (doc?.floor) {
           setFloor(doc.floor);
           await SecureStore.setItemAsync(key, doc.floor);
         }
       } catch (error) {
-        console.error("🧨 Error during loadFloor:", error);
+        console.error("Error during loadFloor:", error);
       }
     };
-  
+
     loadFloor();
   }, []);
 
@@ -173,24 +235,6 @@ export default function VolunteerDashboard() {
     fetchTeamLeads();
   }, [floor]);
 
-  const handleLogout = async () => {
-    Alert.alert(
-      "Heads Up!",
-      "Logging out does NOT check you out of your shift.\nPlease see a team lead or admin to check out.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Log Out Anyway",
-          style: "destructive",
-          onPress: async () => {
-            await SecureStore.deleteItemAsync("volunteerSession");
-            router.replace("/");
-          },
-        },
-      ]
-    );
-  };
-
   const handleHelpRequest = async () => {
     try {
       await addDoc(collection(db, "help_requests"), {
@@ -218,6 +262,24 @@ export default function VolunteerDashboard() {
     }
   };
 
+  const handleLogout = async () => {
+    Alert.alert(
+      "Heads Up!",
+      "Logging out does NOT check you out of your shift.\nPlease see a team lead or admin to check out.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Log Out Anyway",
+          style: "destructive",
+          onPress: async () => {
+            await SecureStore.deleteItemAsync("volunteerSession");
+            router.replace("/");
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.background }]}
@@ -228,9 +290,28 @@ export default function VolunteerDashboard() {
         </Text>
 
         <Text style={[styles.subText, { color: theme.text }]}>
-          {floor
-            ? `✅ You’re checked in on Floor ${floor}`
-            : "⚠️ Please check in with your team lead to get your assignment."}
+          {nextShift ? (
+            `🗓️ Your next scheduled shift starts at ${
+              nextShift.start_time
+            } on ${nextShift.date}. Please arrive at ${subtractThirtyMinutes(
+              nextShift.start_time
+            )}.`
+          ) : (
+            <>
+              You have no shifts scheduled.{" "}
+              <Text
+                style={{ textDecorationLine: "underline", color: theme.link }}
+                onPress={() =>
+                  router.push({
+                    pathname: "/volunteer/ViewSchedule",
+                    params: { name, event, uid },
+                  })
+                }
+              >
+                Tap here to schedule your next shift.
+              </Text>
+            </>
+          )}
         </Text>
 
         {/* Always show the Team Leads Card */}
@@ -260,69 +341,54 @@ export default function VolunteerDashboard() {
           )}
         </View>
 
-        {/* Schedule and Highlights */}
-        <Text style={[styles.subText, { color: theme.text }]}>
-          {isATW
-            ? "Here’s what’s coming up at Atlanta Tech Week:"
-            : "Here’s what’s happening soon:"}
-        </Text>
-
-        {upcomingBlocks.length > 0 ? (
-          upcomingBlocks.map((block, index) => (
-            <View
-              key={index}
-              style={[styles.scheduleCard, { borderColor: theme.text }]}
-            >
-              <Text style={[styles.cardTitle, { color: theme.text }]}>
-                📅 {block.label}
-              </Text>
-              {block.items.map((item, i) => (
-                <View key={i} style={styles.scheduleItem}>
-                  <Text style={[styles.scheduleTime, { color: theme.text }]}>
-                    {isATW
-                      ? `🕒 ${item.time}`
-                      : `📅 ${item.start} – ${item.end}`}
-                  </Text>
-                  <Text style={[styles.scheduleTitle, { color: theme.text }]}>
-                    {isATW ? `📛 ${item.label}` : `🎤 ${item.label}`}
-                  </Text>
-                  {!isATW && item.speaker && (
-                    <Text
-                      style={[styles.scheduleSpeaker, { color: theme.text }]}
-                    >
-                      🙋 {item.speaker}
-                    </Text>
-                  )}
-                  {item.location && (
-                    <Text
-                      style={[styles.scheduleLocation, { color: theme.text }]}
-                    >
-                      📍 {item.location}
-                    </Text>
-                  )}
-                </View>
-              ))}
-            </View>
-          ))
-        ) : (
-          <Text style={[styles.scheduleTitle, { color: theme.text }]}>
-            No sessions in this time block. Full schedule available in the
-            Render app.
+        <View style={[styles.infoCard, { borderColor: theme.text }]}>
+          <Text style={[styles.cardTitle, { color: theme.text }]}>
+            📌 Your Volunteer Snapshot
           </Text>
-        )}
 
-        {highlights.length > 0 && (
-          <View style={[styles.infoCard, { borderColor: theme.text }]}>
-            <Text style={[styles.cardTitle, { color: theme.text }]}>
-              ⚡ Today’s Highlights
-            </Text>
-            {highlights.map((line, i) => (
-              <Text key={i} style={[styles.cardText, { color: theme.text }]}>
-                • {line}
+          {nextShift ? (
+            <>
+              {nextShift && (
+                <Text>
+                  📆 <Text style={styles.bold}>Next Shift:</Text>{" "}
+                  {nextShift.start_time} - {nextShift.end_time}
+                </Text>
+              )}
+              <Text>
+                📍 <Text style={styles.bold}>Location:</Text> Floor{" "}
+                {nextShift.floor || "TBD"}
               </Text>
-            ))}
-          </View>
-        )}
+              <Text>
+                🧍 <Text style={styles.bold}>Assignment:</Text>{" "}
+                {nextShift.role || "TBD"}
+              </Text>
+              <Text>
+                📶 <Text style={styles.bold}>Status:</Text>{" "}
+                {isCheckedIn ? "Checked In" : "Not Checked In"}
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.noShift}>
+                You don’t have a shift scheduled right now.
+              </Text>
+              <Text style={styles.encouragement}>
+                🙌 Thanks for being part of the team — your impact still counts!
+              </Text>
+            </>
+          )}
+
+          <View style={styles.divider} />
+
+          <Text>
+            ✅ <Text style={styles.bold}>Shifts Completed:</Text>{" "}
+            {impactData.shiftsCompleted}
+          </Text>
+          <Text>
+            ⏱️ <Text style={styles.bold}>Hours Volunteered:</Text>{" "}
+            {impactData.totalHours}
+          </Text>
+        </View>
 
         {/* Quick Tips */}
         <View style={[styles.infoCard, { borderColor: theme.text }]}>
@@ -330,23 +396,24 @@ export default function VolunteerDashboard() {
             🧰 Quick Tips
           </Text>
           <Text style={[styles.cardText, { color: theme.text }]}>
-            • Wi-Fi: render2025 / Password: atltech{"\n"}• Lost & Found: Check
-            at HQ{"\n"}• Slack: #volunteers channel
+            {quickTips[event]}
           </Text>
         </View>
 
-        <View style={styles.renderAppNote}>
-          <Text style={[styles.renderAppText, { color: theme.text }]}>
-            *The full schedule is available in the Render App.*
-          </Text>
-          <TouchableOpacity
-            onPress={() => Linking.openURL("https://renderatl.com/app")}
-          >
-            <Text style={[styles.renderAppLink, { color: theme.text }]}>
-              🔗 Tap here to download or open it
+        {(event === "Render" || event === "ATW") && (
+          <View style={styles.renderAppNote}>
+            <Text style={[styles.renderAppText, { color: theme.text }]}>
+              *The full schedule is available in the Render App.*
             </Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              onPress={() => Linking.openURL("https://renderatl.com/app")}
+            >
+              <Text style={[styles.renderAppLink, { color: theme.text }]}>
+                🔗 Tap here to download or open it
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
 
       {/* Bottom Nav */}
@@ -417,75 +484,6 @@ function IconButton({ label, icon, onPress, theme }) {
       <Text style={[styles.iconLabel, { color: theme.text }]}>{label}</Text>
     </TouchableOpacity>
   );
-}
-
-// Schedule time blocks helper
-function getTimeBlockEvents(schedule, isATW) {
-  const now = new Date();
-  const currentHour = now.getHours() + now.getMinutes() / 60;
-
-  const blocks = [
-    { label: "9:00–11:00 AM", start: 9, end: 11 },
-    { label: "11:30 AM–2:00 PM", start: 11.5, end: 14 },
-    { label: "2:30–5:00 PM", start: 14.5, end: 17 },
-    { label: "Evening", start: 17.5, end: 23.99 },
-  ];
-
-  const getDecimalTime = (time) => {
-    const [hr, min] = time.split(":").map(Number);
-    return hr + min / 60;
-  };
-
-  for (let block of blocks) {
-    const blockEvents = schedule.filter((event) => {
-      const startTime = isATW
-        ? getDecimalTime(event.time)
-        : getDecimalTime(event.start);
-      return startTime >= block.start && startTime < block.end;
-    });
-
-    if (blockEvents.length && currentHour < block.end) {
-      return [{ label: block.label, items: blockEvents.slice(0, 3) }];
-    }
-  }
-  return [];
-}
-
-// Highlights helper
-function getHighlightsFromSchedule(schedule) {
-  const prioritize = (label = "", location = "") => {
-    const text = `${label} ${location}`.toLowerCase();
-    if (text.includes("keynote")) return 1;
-    if (text.includes("main stage") && text.includes("ai")) return 2;
-    if (text.includes("silicon south")) return 3;
-    if (text.includes("fireside")) return 4;
-    if (text.includes("closing") || text.includes("opening")) return 5;
-    return 6;
-  };
-
-  const getDecimalTime = (timeStr) => {
-    const time = timeStr || "";
-    const [h, m] = time.split(":").map(Number);
-    return h + (m || 0) / 60;
-  };
-
-  return schedule
-    .map((event) => {
-      const label = event.label?.toLowerCase() || "";
-      const location = event.location?.toLowerCase() || "";
-      const time = event.time || event.start || "00:00";
-      const rank = prioritize(label, location);
-      return { ...event, rank, timeVal: getDecimalTime(time) };
-    })
-    .filter((e) => e.rank < 6)
-    .sort((a, b) =>
-      a.rank === b.rank ? a.timeVal - b.timeVal : a.rank - b.rank
-    )
-    .slice(0, 3)
-    .map((e) => {
-      const time = e.time || `${e.start} – ${e.end}`;
-      return `${e.label} at ${time}${e.location ? ` (${e.location})` : ""}`;
-    });
 }
 
 const styles = StyleSheet.create({

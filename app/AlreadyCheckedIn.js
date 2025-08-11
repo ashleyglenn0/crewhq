@@ -50,48 +50,55 @@ export default function AlreadyCheckedIn() {
   const handleSubmit = async () => {
     setLoading(true);
     setError("");
-
+  
     try {
-      const start = Timestamp.fromDate(new Date(new Date().setHours(0, 0, 0, 0)));
-      const end = Timestamp.fromDate(new Date(new Date().setHours(23, 59, 59, 999)));
-
-      // ✅ Check task_checkins to confirm they've already checked into task
+      // Get current date for comparison (start and end of today in UTC)
+      const todayStart = Timestamp.fromDate(
+        new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate(), 0, 0, 0))
+      ); // start of today in UTC
+      const todayEnd = Timestamp.fromDate(
+        new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), new Date().getUTCDate(), 23, 59, 59, 999))
+      ); // end of today in UTC
+  
+      console.log("Checking for check-ins between", todayStart.toDate(), "and", todayEnd.toDate());
+  
+      // Check check-ins to confirm they've already checked in
       const checkinQuery = query(
-        collection(db, "task_checkins"),
+        collection(db, "check_ins"),
         where("first_name", "==", firstName),
         where("last_name", "==", lastName),
         where("event", "==", event),
-        where("checkinTime", ">=", start),
-        where("checkinTime", "<=", end)
+        where("timestamp", ">=", todayStart),
+        where("timestamp", "<=", todayEnd)
       );
-
+  
       const checkinSnapshot = await getDocs(checkinQuery);
-
+      console.log("Check-in snapshot size:", checkinSnapshot.size); // Log the snapshot size
+  
       if (checkinSnapshot.empty) {
+        console.log("No active check-in found.");
         setError("No active check-in found. Please see an Admin.");
         setLoading(false);
         return;
       }
-
-      // ✅ Now lookup their role from scheduled_volunteers
-      const roleQuery = query(
-        collection(db, "scheduled_volunteers"),
-        where("first_name", "==", firstName),
-        where("last_name", "==", lastName),
-        where("event", "==", event)
+  
+      console.log("Check-ins found:", checkinSnapshot.docs.map(doc => doc.data()));
+  
+      // Check if user is a team lead by querying the shifts collection
+      const teamLeadQuery = query(
+        collection(db, "shifts"),
+        where("team_lead_uid", "array-contains", `${firstName} ${lastName}`), // Check if the team_lead_uid array contains the user's full name
+        where("event", "==", event) // Ensure it matches the current event
       );
-
-      const roleSnapshot = await getDocs(roleQuery);
-
-      let role = "volunteer"; // default
-      if (!roleSnapshot.empty) {
-        const data = roleSnapshot.docs[0].data();
-        if (data.role === "teamlead") {
-          role = "teamlead";
-        }
+  
+      const teamLeadSnapshot = await getDocs(teamLeadQuery);
+      let role = "volunteer"; // default to volunteer
+  
+      if (!teamLeadSnapshot.empty) {
+        role = "teamlead"; // If the user is found as a team lead, mark them as a teamlead
       }
-
-      // ✅ Write full session into SecureStore
+  
+      // Write full session into SecureStore
       await SecureStore.setItemAsync(
         "volunteerSession",
         JSON.stringify({
@@ -100,16 +107,22 @@ export default function AlreadyCheckedIn() {
           role,
         })
       );
-
-      // ✅ Redirect correctly
+  
+      // Redirect correctly based on the role
       if (role === "teamlead") {
-        router.replace(`/teamlead/dashboard?name=${encodeURIComponent(firstName)}%20${encodeURIComponent(lastName)}&event=${event}`);
+        router.replace({
+          pathname: "/teamlead/dashboard",
+          params: { event, name: `${firstName} ${lastName}` },
+        });
       } else {
-        router.replace(`/volunteer/dashboard?name=${encodeURIComponent(firstName)}%20${encodeURIComponent(lastName)}&event=${event}`);
+        router.replace({
+          pathname: "/volunteer/dashboard",
+          params: { event, name: `${firstName} ${lastName}` },
+        });
       }
-
+  
     } catch (err) {
-      console.error(err);
+      console.error("Error occurred:", err);
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);

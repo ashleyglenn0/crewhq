@@ -1,10 +1,56 @@
-import 'dotenv/config';
+import "dotenv/config";
 
 export default ({ config }) => {
   return {
     ...config,
-    extra: {
-      QR_BYPASS: process.env.EXPO_PUBLIC_QR_BYPASS ?? 'false',
+    name: "crewhq-total-rebuild",
+    slug: "crewhq-total-rebuild",
+    version: "1.0.0",
+    orientation: "portrait",
+    icon: "./assets/images/icon.png",
+    scheme: "crewhqtotalrebuild",
+    userInterfaceStyle: "automatic",
+    newArchEnabled: true,
+    ios: {
+      supportsTablet: true,
+      bundleIdentifier: "com.ashleyglenn.crewhq"
     },
+    android: {
+      adaptiveIcon: {
+        foregroundImage: "./assets/images/adaptive-icon.png",
+        backgroundColor: "#ffffff"
+      },
+      edgeToEdgeEnabled: true,
+      package: "com.ashleyglenn.crewhq"
+    },
+    web: {
+      bundler: "metro",
+      output: "static",
+      favicon: "./assets/images/favicon.png"
+    },
+    plugins: [
+      "expo-router",
+      "expo-secure-store",
+      "expo-camera",
+      [
+        "expo-splash-screen",
+        {
+          image: "./assets/images/splash-icon.png",
+          imageWidth: 200,
+          resizeMode: "contain",
+          backgroundColor: "#ffffff"
+        }
+      ]
+    ],
+    experiments: {
+      typedRoutes: true
+    },
+    extra: {
+      QR_BYPASS: process.env.EXPO_PUBLIC_QR_BYPASS ?? "false",
+      router: {},
+      eas: {
+        projectId: "ee5e4779-8f0d-49d0-8bae-720bc0820e08"
+      }
+    }
   };
 };

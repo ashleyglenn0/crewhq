@@ -26,16 +26,21 @@ export default function RoleSelectScreen() {
   const { event } = useLocalSearchParams();
   const theme = themes[event] || themes.RenderATL;
 
+  const handleSignUp = () => {
+    router.push({ pathname: "/SignUpForm", params: { event } });
+  };
+
   const handleScan = () => {
     router.push({ pathname: "/admin/ScanAdminQR", params: { event } });
+  };
+
+  const handlePriorCheckIn = () => {
+    router.push({ pathname: "/AlreadyCheckedIn", params: { event } });
   };
 
   const handleAdmin = () => {
     router.push({ pathname: "/admin/login", params: { event } });
   };
-  const handlePriorCheckIn = () => {
-    router.push({ pathname: "/AlreadyCheckedIn", params: { event } });
-  }
 
   return (
     <ScreenWrapper event={event} scroll={true}>
@@ -52,24 +57,37 @@ export default function RoleSelectScreen() {
         </Text>
 
         <TouchableOpacity
+          onPress={handleSignUp}
+          style={[styles.button, { backgroundColor: theme.primary }]}
+        >
+          <Text style={styles.buttonText}>🙋 Sign Up to Volunteer</Text>
+        </TouchableOpacity>
+
+        <Text style={[styles.divider, { color: theme.text }]}>──────── OR ────────</Text>
+
+        <TouchableOpacity
           onPress={handleScan}
           style={[styles.button, { backgroundColor: theme.primary }]}
         >
-          <Text style={styles.buttonText}>Scan Admin QR</Text>
+          <Text style={styles.buttonText}>📷 Scan Admin QR Code</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          onPress={handleAdmin}
-          style={[styles.button, { backgroundColor: theme.primary }]}
-        >
-          <Text style={styles.buttonText}>I’m an Admin</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
           onPress={handlePriorCheckIn}
           style={[styles.button, { backgroundColor: theme.primary }]}
-          >
-            <Text style={styles.buttonText}>Already Checked In?</Text>
-          </TouchableOpacity>
+        >
+          <Text style={styles.buttonText}>✅ Already Checked In?</Text>
+        </TouchableOpacity>
+
+        <Text style={[styles.divider, { color: theme.text }]}>────── Staff Only ──────</Text>
+
+        <TouchableOpacity
+          onPress={handleAdmin}
+          style={[styles.button, { backgroundColor: "#ccc" }]}
+        >
+          <Text style={[styles.buttonText, { color: "#000" }]}>🔒 I’m an Admin</Text>
+        </TouchableOpacity>
+
         <Text style={[styles.footerText, { color: theme.text }]}>
           Admins must start check-in sessions before others may proceed.
         </Text>
@@ -77,6 +95,7 @@ export default function RoleSelectScreen() {
     </ScreenWrapper>
   );
 }
+
 
 const styles = StyleSheet.create({
   backButton: {
@@ -124,5 +143,12 @@ const styles = StyleSheet.create({
     marginTop: 40,
     textAlign: "center",
     opacity: 0.7,
+  },
+  divider: {
+    fontSize: 14,
+    marginVertical: 10,
+    textAlign: "center",
+    fontWeight: "500",
+    opacity: 0.6,
   },
 });

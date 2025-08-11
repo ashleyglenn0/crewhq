@@ -19,11 +19,32 @@ import {
   doc,
 } from "firebase/firestore";
 import { format } from "date-fns";
+import { useLocalSearchParams } from "expo-router";
+
+const themes = {
+  RenderATL: {
+    background: "#fdf0e2",
+    primary: "#fe88df",
+    text: "#711b43",
+  },
+  ATW: {
+    background: "#f5f5f5",
+    primary: "#ffb89e",
+    text: "#4f2b91",
+  },
+  GovTechCon: {
+    background: "FFFFFF",
+    primary: "#17A2C0",
+    text: "#161F4A",
+  },
+};
 
 export default function AssignmentsTab() {
   const [shifts, setShifts] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
+  const { event } = useLocalSearchParams();
+  const theme = themes[event] || themes.RenderATL;
 
   const fetchShifts = async (dateStr) => {
     const q = query(collection(db, "shifts"), where("date", "==", dateStr));
@@ -46,6 +67,17 @@ export default function AssignmentsTab() {
       await updateDoc(doc(db, "shifts", shiftId), {
         team_lead_uid: volunteer.uid,
       });
+
+      const q = query(
+        collection(db, "scheduled_volunteers"),
+        where("uid", "==", volunteer.uid)
+      );
+      const snapshot = await getDocs(q);
+      if (!snapshot.empty) {
+        const docRef = snapshot.docs[0].ref;
+        await updateDoc(docRef, { role: "teamlead" });
+      }
+
       Alert.alert("Success", `${volunteer.first_name} assigned as Team Lead.`);
       setShifts((prev) =>
         prev.map((s) =>
@@ -61,14 +93,14 @@ export default function AssignmentsTab() {
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.header}>Shift Assignments</Text>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
+      <Text style={[styles.header, { color: theme.text }]}>Shift Assignments</Text>
 
       <TouchableOpacity
-        style={styles.dateButton}
+        style={[styles.dateButton, { backgroundColor: theme.primary }]}
         onPress={() => setShowPicker(true)}
       >
-        <Text style={styles.dateButtonText}>📅 {dateStr}</Text>
+        <Text style={[styles.dateButtonText, { color: theme.text }]}>📅 {dateStr}</Text>
       </TouchableOpacity>
 
       {showPicker && (
@@ -84,39 +116,46 @@ export default function AssignmentsTab() {
       )}
 
       {shifts.length === 0 && (
-        <Text style={styles.emptyText}>No shifts scheduled for this date.</Text>
+        <Text style={[styles.emptyText, { color: theme.text }]}>No shifts scheduled for this date.</Text>
       )}
-
       {shifts.map((shift) => (
-        <View key={shift.id} style={styles.shiftCard}>
-          <Text style={styles.shiftTitle}>
-            {shift.date} | {shift.start_time}–{shift.end_time} ({shift.floor})
-          </Text>
-          {shift.claimed_by?.length > 0 ? (
-            shift.claimed_by.map((volunteer) => {
-              const isLead = shift.team_lead_uid === volunteer.uid;
-              return (
-                <View key={volunteer.uid} style={styles.volunteerRow}>
-                  <Text style={[styles.volunteerName, isLead && styles.teamLead]}>
-                    {volunteer.first_name} {volunteer.last_name}
-                    {isLead ? " (Team Lead)" : ""}
-                  </Text>
-                  {!isLead && (
-                    <TouchableOpacity
-                      onPress={() => assignTeamLead(shift.id, volunteer)}
-                      style={styles.assignButton}
-                    >
-                      <Text style={styles.assignText}>Assign Team Lead</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              );
-            })
-          ) : (
-            <Text style={styles.emptyText}>No volunteers yet.</Text>
-          )}
-        </View>
-      ))}
+  <View key={shift.id} style={styles.shiftCard}>
+    <Text style={[styles.shiftTitle, { color: theme.text }]}>
+      {shift.date} | {shift.start_time}–{shift.end_time} ({shift.floor})
+    </Text>
+
+    {shift.claimed_by?.length > 0 ? (
+      shift.claimed_by.map((volunteer) => {
+        const isLead = shift.team_lead_uid === volunteer.uid;
+
+        return (
+          <View key={volunteer.uid} style={styles.volunteerRow}>
+            <Text style={[styles.volunteerName, isLead && styles.teamLead]}>
+              {volunteer.first_name} {volunteer.last_name}
+              {isLead ? " (Team Lead)" : ""}
+            </Text>
+
+            {!isLead && (
+              <TouchableOpacity
+                onPress={() => assignTeamLead(shift.id, volunteer)}
+                style={[styles.assignButton, { backgroundColor: theme.primary }]}
+              >
+                <Text style={[styles.assignText, { color: theme.text }]}>
+                  Assign Team Lead
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        );
+      })
+    ) : (
+      <Text style={[styles.emptyText, { color: theme.text }]}>No volunteers yet.</Text>
+    )}
+  </View>
+))}
+
+
+      
     </ScrollView>
   );
 }
@@ -129,7 +168,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   dateButton: {
-    backgroundColor: "#fe88df",
     padding: 10,
     borderRadius: 8,
     marginBottom: 20,
@@ -166,13 +204,11 @@ const styles = StyleSheet.create({
     color: "#711B44",
   },
   assignButton: {
-    backgroundColor: "#fe88df",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 6,
   },
   assignText: {
-    color: "#fff",
     fontWeight: "600",
     fontSize: 12,
   },
