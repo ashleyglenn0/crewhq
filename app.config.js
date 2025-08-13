@@ -5,15 +5,17 @@ export default ({ config }) => {
     ...config,
     name: "crewhq-total-rebuild",
     slug: "crewhq-total-rebuild",
-    version: "1.0.0",
-    orientation: "portrait",
-    icon: "./assets/images/icon.png",
-    scheme: "crewhqtotalrebuild",
-    userInterfaceStyle: "automatic",
-    newArchEnabled: true,
+    version: "1.0.0",  // Your version number
     ios: {
       supportsTablet: true,
-      bundleIdentifier: "com.ashleyglenn.crewhq"
+      bundleIdentifier: "com.ashleyglenn.crewhq",
+      buildNumber: "1",
+      pushNotifications: {
+        enable: true,
+      },
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false  // Add this line to avoid delays
+      } // iOS build number
     },
     android: {
       adaptiveIcon: {
@@ -21,7 +23,8 @@ export default ({ config }) => {
         backgroundColor: "#ffffff"
       },
       edgeToEdgeEnabled: true,
-      package: "com.ashleyglenn.crewhq"
+      package: "com.ashleyglenn.crewhq",
+      versionCode: 1  // Android build number
     },
     web: {
       bundler: "metro",
@@ -32,6 +35,7 @@ export default ({ config }) => {
       "expo-router",
       "expo-secure-store",
       "expo-camera",
+      "expo-web-browser",
       [
         "expo-splash-screen",
         {

@@ -40,7 +40,7 @@ const themes = {
 
 const makeSecureKey = (key) => key.replace(/[^a-zA-Z0-9._-]/g, "_");
 
-export default function CheckInScreen() {
+export default function SignUpForm() {
   const { event } = useLocalSearchParams();
   const theme = themes[event] || themes.RenderATL;
   const router = useRouter();
@@ -192,3 +192,4 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+
